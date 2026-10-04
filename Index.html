@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Musician CV & Cover Letter Generator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #121212; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 380px; background: #1a1a1a; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; border-right: 1px solid #333; flex-shrink: 0; z-index: 10; }
+        .sidebar h2 { font-size: 1.1rem; text-transform: uppercase; color: #00fff0; margin-bottom: 5px; letter-spacing: 1px; }
+        
+        .form-g { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+        label { font-size: 0.7rem; text-transform: uppercase; color: #aaa; font-weight: 700; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 10px; background: #262626; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: inherit; font-size: 0.85rem; transition: opacity 0.2s; }
+        
+        /* Rich Text Editor Styling */
+        .rich-textarea { width: 100%; padding: 10px; background: #262626; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: inherit; font-size: 0.85rem; min-height: 80px; overflow-y: auto; cursor: text; white-space: pre-wrap; outline: none; }
+        .rich-textarea:empty:before { content: attr(placeholder); color: #888; pointer-events: none; }
+        .rich-textarea:focus, input:focus { border-color: #00fff0; }
+        .rich-textarea b, .rich-textarea strong { color: #00fff0; } 
+
+        input[type="range"] { padding: 0; height: 15px; cursor: pointer; }
+        input[type="color"] { padding: 0; height: 35px; cursor: pointer; }
+        input:disabled { background: #1a1a1a; border-color: #333; color: #666; cursor: not-allowed; }
+        input[type="month"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        
+        .input-group { display: flex; align-items: stretch; }
+        .input-group-addon { background: #333; padding: 10px; border: 1px solid #444; border-right: none; border-radius: 4px 0 0 4px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .input-group input { border-radius: 0 4px 4px 0; }
+
+        .format-toolbar { display: flex; gap: 4px; margin-bottom: 4px; background: #222; padding: 3px; border-radius: 4px; border: 1px solid #333; width: fit-content; }
+        .fmt-btn { background: #333; color: #00fff0; border: none; padding: 4px 8px; font-size: 0.7rem; font-weight: bold; border-radius: 3px; cursor: pointer; text-transform: uppercase; transition: background 0.2s; }
+        .fmt-btn:hover { background: #00fff0; color: #121212; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 10px; background: #242424; padding: 2px; border-radius: 4px; }
+        .tab { flex: 1; padding: 10px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; border-radius: 4px; }
+        .tab.active { background: #00fff0; color: #121212; }
+        .pane { display: none; } .pane.active { display: block; }
+        
+        .btn { background: #00fff0; color: #121212; padding: 12px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 10px; border-radius: 4px; letter-spacing: 0.5px; }
+        .btn-outline { background: transparent; border: 1px dashed #00fff0; color: #00fff0; margin-top: 0; margin-bottom: 15px; }
+        .btn-outline:hover { background: rgba(0, 255, 240, 0.1); }
+
+        .dynamic-block-input { border: 1px solid #333; padding: 12px; border-radius: 6px; background: #222; margin-bottom: 12px; }
+        .dynamic-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .remove-btn { color: #ff4d4d; font-size: 0.7rem; text-transform: uppercase; font-weight: bold; cursor: pointer; }
+        
+        .preview { flex: 1; background: #2b2b2b; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        #pages-container { display: flex; flex-direction: column; gap: 40px; width: 100%; align-items: center; }
+        
+        .paper { 
+            --title-color: #222222;
+            --body-color: #444444;
+            width: 210mm; 
+            height: 297mm; 
+            background: #f5f5f5; 
+            padding: 50px; 
+            position: relative; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            flex-shrink: 0;
+        }
+        
+        /* STRICT GAP SO TEXT AND PICTURE NEVER OVERLAP */
+        .header { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; }
+        .header-text { flex: 1; padding-top: 10px; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+        .name { font-size: 3.2rem; font-weight: 900; text-transform: uppercase; line-height: 0.95; letter-spacing: -1px; word-break: break-word; color: var(--title-color); }
+        .title { font-size: 1.1rem; letter-spacing: 4px; text-transform: uppercase; margin-top: 12px; padding-bottom: 12px; border-bottom: 1px solid #ccc; font-weight: 400; color: var(--title-color); opacity: 0.8; width: 100%; word-break: break-word; }
+        
+        .qr-container { display: flex; flex-direction: row; align-items: center; gap: 12px; margin-top: 20px; }
+        .qr-code { width: 75px; height: 75px; border-radius: 4px; mix-blend-mode: multiply; }
+        .qr-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--title-color); letter-spacing: 1px; text-align: left; max-width: 120px; line-height: 1.4; opacity: 0.9; }
+
+        .visuals { display: flex; gap: 20px; align-items: flex-end; flex-shrink: 0; }
+        .profile-pic { width: 160px; height: 210px; border-radius: 8px; object-fit: cover; display: none; box-shadow: 0 6px 15px rgba(0,0,0,0.15); transition: width 0.1s, height 0.1s; background: transparent; }
+        
+        .grid { display: grid; grid-template-columns: 220px 1fr; gap: 40px; width: 100%; }
+        .col-left { display: flex; flex-direction: column; gap: 1.2em; font-size: 1rem; }
+        .col-right { display: flex; flex-direction: column; gap: 15px; font-size: 1rem; }
+        
+        .section-h { font-size: 1.1em; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ddd; padding-bottom: 5px; color: var(--title-color); margin-top: 5px; }
+        .contact-text { font-size: 0.85em; line-height: 1.6; word-break: break-all; color: var(--title-color); display: flex; flex-direction: column; }
+        .contact-item { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5em; color: var(--title-color); }
+        .contact-icon { width: 1.1em; height: 1.1em; color: var(--title-color); flex-shrink: 0; }
+        .contact-item a { color: var(--title-color); text-decoration: none; transition: 0.2s; }
+        .contact-item a:hover { text-decoration: underline; }
+        
+        .track-item { display: flex; align-items: center; gap: 12px; margin-bottom: 0.6em; }
+        .play-btn { width: 1.8em; height: 1.8em; background: var(--title-color); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6em; flex-shrink: 0; }
+        .track-title { font-weight: 700; font-size: 0.85em; color: var(--title-color); }
+        .track-title a { color: var(--title-color); text-decoration: none; }
+        .track-title a:hover { text-decoration: underline; }
+        .track-info { font-size: 0.75em; opacity: 0.8; margin-top: 2px; color: var(--body-color); }
+
+        .skills-container { display: flex; flex-wrap: wrap; gap: 6px; }
+        .skill-pill { padding: 0.4em 0.8em; border: 1px solid var(--title-color); border-radius: 4px; font-size: 0.75em; font-weight: bold; color: var(--title-color); }
+        
+        .block-item { position: relative; border-left: 2px solid var(--title-color); padding-left: 15px; padding-top: 12px; }
+        .block-item::before, .quote-block::before { content: ""; position: absolute; top: 0; left: 15px; right: 0; height: 1px; background: #ddd; }
+        .block-h { font-weight: 700; text-transform: uppercase; font-size: 1.05rem; margin-bottom: 2px; letter-spacing: 0.5px; color: var(--title-color); }
+        .block-meta { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; color: var(--body-color); opacity: 0.8; }
+        
+        .block-p { font-size: 0.85rem; line-height: 1.5; text-align: justify; color: var(--body-color); }
+        .block-p b, .block-p strong { color: var(--title-color); font-weight: bold; }
+        .block-p a { color: var(--title-color); text-decoration: underline; }
+
+        .quote-block { position: relative; border-left: 3px solid var(--title-color); padding-left: 15px; padding-top: 12px; font-style: italic; color: var(--body-color); }
+        .quote-text { font-size: 0.9rem; line-height: 1.4; margin-bottom: 4px; }
+        .quote-source { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--title-color); }
+
+        .cl-meta { font-size: 0.9rem; line-height: 1.6; margin-bottom: 25px; color: var(--body-color); }
+        .cl-body { font-size: 0.95rem; line-height: 1.7; text-align: justify; white-space: pre-wrap; color: var(--body-color); }
+        
+        @media print { 
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            body, .preview { height: auto; overflow: visible; background: none !important; padding: 0; display: block; }
+            .sidebar { display: none !important; } 
+            #pages-container { gap: 0; display: block; }
+            .paper { box-shadow: none !important; margin: 0; page-break-after: always; }
+            /* Removed box-shadow on print so no gray boxes appear under pictures.
+               Do NOT set background: transparent here — .v-cover uses background-image for album art
+               and the shorthand would wipe the image on PDF/print. */
+            .profile-pic, .v-cover, .g-photo { box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Artist CV Engine</h2>
+        <div class="tabs">
+            <button class="tab active" onclick="setTab(event, 'p-prof')">Profile</button>
+            <button class="tab" onclick="setTab(event, 'p-sec')">Content</button>
+            <button class="tab" onclick="setTab(event, 'p-style')">Design</button>
+            <button class="tab" onclick="setTab(event, 'p-saves')" style="background: #333;">Saves</button>
+        </div>
+        
+        <div id="p-prof" class="pane active">
+            <div class="form-g"><label>Profile Picture</label><input type="file" id="in-pic" accept="image/*" onchange="loadPic(event)" style="padding: 6px;"></div>
+            <div class="form-g"><label>Picture Size</label><input type="range" id="in-pic-scale" min="80" max="250" value="160" oninput="upPicScale()"></div>
+            <div class="form-g"><label>Artist Name</label><input type="text" id="in-name" value="Francisco Morales" oninput="up()"></div>
+            <div class="form-g"><label>Subtitle</label><input type="text" id="in-title" value="Musician" oninput="up()"></div>
+            <div class="form-g"><label>Portfolio / Streaming Link (Generates QR)</label><input type="text" id="in-qr" value="https://open.spotify.com/artist/2rW1QhV98bS3IoRVnh6ftM?si=1J8bkmhPROC9_fC6A1w65g" oninput="up()"></div>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+            <label style="color: #00fff0;">Contact Details</label>
+            
+            <div class="form-g"><label>City</label><input type="text" id="in-city" value="Amsterdam" oninput="up()"></div>
+            <div class="form-g"><label>Postal Code</label><input type="text" id="in-postal" value="1011 AB" placeholder="1234 AB" oninput="up()"></div>
+            <div class="form-g">
+                <label>Phone Number</label>
+                <div class="input-group">
+                    <span class="input-group-addon">+31</span>
+                    <input type="tel" id="in-phone" value="6 1234 5678" oninput="up()">
+                </div>
+            </div>
+            <div class="form-g"><label>Email</label><input type="email" id="in-email" value="hello@reallygreatsite.com" oninput="up()"></div>
+            <div class="form-g"><label>Website</label><input type="text" id="in-web" value="www.reallygreatsite.com" oninput="up()"></div>
+        </div>
+
+        <div id="p-sec" class="pane">
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Experience & Projects</label>
+            <div id="dynamic-content-list"></div>
+            <button type="button" class="btn btn-outline" onclick="addContentBlock('', '', '', '', '', false)">+ Add New Content</button>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+            
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Press & Acclaim</label>
+            <div id="dynamic-quotes-list"></div>
+            <button type="button" class="btn btn-outline" onclick="addQuoteBlock('', '')">+ Add Press Quote</button>
+
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+
+            <div class="form-g">
+                <label>Tech Skills, DAW & Gear (Comma separated)</label>
+                <div class="format-toolbar">
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('bold', false, null);" title="Bold">B</button>
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);" title="Italic">I</button>
+                </div>
+                <div id="in-skills" class="rich-textarea" contenteditable="true" oninput="up()">Ableton Live 11, Logic Pro, Fender Stratocaster, Moog Sub 37, Live Looping</div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Tracks (Text Format)</label>
+            <div class="form-g" style="margin-bottom: 12px;"><label>Section Title</label><input type="text" id="in-tracks-title" value="Selected Works" oninput="up()"></div>
+            <div id="dynamic-tracks-list"></div>
+            <button type="button" class="btn btn-outline" onclick="addTrackBlock('', '', '')">+ Add Text Track</button>
+
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Visual Discography (Album Covers)</label>
+            <div class="form-g" style="margin-bottom: 12px;">
+                <label>Position in Layout</label>
+                <select id="in-v-pos" onchange="up()">
+                    <option value="0">Top (Before Content)</option>
+                    <option value="1">After 1st Experience Box</option>
+                    <option value="2">After 2nd Experience Box</option>
+                    <option value="3">After 3rd Experience Box</option>
+                    <option value="99">Bottom (End of CV)</option>
+                </select>
+            </div>
+            <div id="dynamic-v-tracks-list"></div>
+            <button type="button" class="btn btn-outline" onclick="addVTrackBlock('', '', '')">+ Add Release Cover</button>
+
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Band / Artist Gallery</label>
+            <div class="form-g" style="margin-bottom: 12px;">
+                <label>Position in Layout</label>
+                <select id="in-g-pos" onchange="up()">
+                    <option value="0">Top (Before Content)</option>
+                    <option value="1">After 1st Experience Box</option>
+                    <option value="2">After 2nd Experience Box</option>
+                    <option value="3">After 3rd Experience Box</option>
+                    <option value="99" selected>Bottom (End of CV)</option>
+                </select>
+            </div>
+            <div class="form-g" style="margin-bottom: 12px;">
+                <label>Photo Size (Height)</label>
+                <input type="range" id="in-gal-scale" min="80" max="350" value="140" oninput="up()">
+            </div>
+            <div id="dynamic-gallery-list"></div>
+            <button type="button" class="btn btn-outline" onclick="addGalleryBlock('')">+ Add Photo</button>
+
+            <hr style="border: none; border-top: 1px solid #333; margin: 15px 0;">
+            
+            <div class="form-g">
+                <label>Cover Letter Recipient</label>
+                <div class="format-toolbar">
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('bold', false, null);" title="Bold">B</button>
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);" title="Italic">I</button>
+                </div>
+                <div id="in-cl-meta" class="rich-textarea" contenteditable="true" oninput="up()" style="min-height: 50px;">October 24, 2026<br>To the Booking Management Team</div>
+            </div>
+            <div class="form-g">
+                <label>Cover Letter Body</label>
+                <div class="format-toolbar">
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('bold', false, null);" title="Bold">B</button>
+                    <button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand('italic', false, null);" title="Italic">I</button>
+                    <button type="button" class="fmt-btn" onmousedown="formatLink(event)" title="Add or Remove Link">🔗</button>
+                </div>
+                <div id="in-cl-body" class="rich-textarea" contenteditable="true" oninput="up()" style="min-height: 120px;">Dear Management Team,<br><br>I am writing to express my eager interest in joining your performing artist roster. My signature style balances modern acoustic sensibilities with professional performance metrics.<br><br>Sincerely,<br>Francisco Morales</div>
+            </div>
+        </div>
+
+        <div id="p-style" class="pane">
+            <div class="form-g"><label>View Presentation</label><select id="in-view" onchange="up()"><option value="cv">Musician CV / Resume Layout</option><option value="cl">Matching Cover Letter Style</option></select></div>
+            <div class="form-g"><label>Paper Color</label><input type="color" id="c-paper" value="#f5f5f5" oninput="upStyle()"></div>
+            <div class="form-g"><label>Title Color</label><input type="color" id="c-title" value="#222222" oninput="upStyle()"></div>
+            <div class="form-g"><label>Body Text Color</label><input type="color" id="c-body" value="#444444" oninput="upStyle()"></div>
+        </div>
+
+        <div id="p-saves" class="pane">
+            <div class="form-g">
+                <label style="color: #00fff0;">Save Current Progress</label>
+                <div class="input-group">
+                    <input type="text" id="in-save-name" placeholder="e.g. Acoustic Tour CV">
+                    <button type="button" class="fmt-btn" onclick="saveData()" style="border-radius: 0 4px 4px 0; padding: 0 15px;">Save</button>
+                </div>
+            </div>
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0 15px 0;">
+            <label style="color: #00fff0; margin-bottom: 10px; display: block;">Saved Versions</label>
+            <div id="save-list-container"></div>
+        </div>
+        
+        <button class="btn" onclick="window.print()">Export Document PDF</button>
+    </div>
+
+    <div id="templates" style="display: none;">
+        <div id="tmp-header">
+            <div class="header">
+                <div class="header-text">
+                    <div class="name" id="tmp-name"></div>
+                    <div class="title" id="tmp-title"></div>
+                    <div id="tmp-qr-container" class="qr-container" style="display: none;">
+                        <img id="tmp-qr" class="qr-code" alt="QR Code">
+                        <div class="qr-label">Portfolio / Streaming</div>
+                    </div>
+                </div>
+                <div class="visuals">
+                    <img id="tmp-pic" class="profile-pic" alt="Profile">
+                </div>
+            </div>
+        </div>
+        <div id="tmp-left"></div>
+        <div id="tmp-right"></div>
+        <div id="tmp-cl"></div>
+    </div>
+
+    <div class="preview">
+        <div id="pages-container"></div>
+    </div>
+
+    <script>
+        const iconCity = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`;
+        const iconPostal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+        const iconPhone = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`;
+        const iconEmail = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`;
+        const iconWeb = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+
+        function setTab(e, id) {
+            document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.pane').forEach(function(p) { p.classList.remove('active'); });
+            e.currentTarget.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        /* FIXED Link Formatter */
+        function formatLink(e) {
+            e.preventDefault();
+            var url = prompt("Enter link URL (e.g. https://...)\n\nLeave empty and click OK to REMOVE a link.");
+            if (url) {
+                document.execCommand('createLink', false, url);
+            } else if (url === "") {
+                document.execCommand('unlink', false, null);
+            }
+            up();
+        }
+
+        function loadPic(event) {
+            var reader = new FileReader();
+            reader.onload = function(){
+                var output = document.getElementById('tmp-pic');
+                output.src = reader.result;
+                output.style.display = 'block';
+                up();
+            };
+            if(event.target.files[0]) { reader.readAsDataURL(event.target.files[0]); }
+        }
+
+        function readBlockBase64(input) {
+            if(input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    input.nextElementSibling.value = e.target.result;
+                    var preview = input.closest('.dynamic-block-input').querySelector('.img-prev');
+                    if(preview) preview.style.backgroundImage = 'url(' + e.target.result + ')';
+                    up();
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function upPicScale() {
+            var val = document.getElementById('in-pic-scale').value;
+            var pic = document.getElementById('tmp-pic');
+            pic.style.width = val + 'px';
+            pic.style.height = (val * 1.3125) + 'px';
+            up();
+        }
+
+        function togglePresent(cb) {
+            var block = cb.closest('.dynamic-block-input');
+            var endInput = block.querySelector('.dyn-end');
+            if (cb.checked) { endInput.disabled = true; endInput.style.opacity = '0.4'; } 
+            else { endInput.disabled = false; endInput.style.opacity = '1'; }
+            up();
+        }
+
+        function addContentBlock(title, body, city, start, end, isPresent) {
+            var list = document.getElementById('dynamic-content-list');
+            var div = document.createElement('div');
+            div.className = 'dynamic-block-input';
+            var endDisabled = isPresent ? 'disabled style="opacity:0.4"' : '';
+            var checkState = isPresent ? 'checked' : '';
+
+            div.innerHTML = 
+                '<div class="dynamic-block-header"><label style="margin: 0;">Experience Section</label><span class="remove-btn" onclick="removeContentBlock(this)">Remove &times;</span></div>' +
+                '<div class="form-g" style="margin-bottom: 6px;"><input type="text" class="dyn-title" placeholder="Role / Section Title" value="' + title + '" oninput="up()"></div>' +
+                '<div class="form-g" style="margin-bottom: 6px;"><input type="text" class="dyn-city" placeholder="City / Location" value="' + city + '" oninput="up()"></div>' +
+                '<div style="display: flex; gap: 6px; margin-bottom: 6px;">' +
+                    '<input type="month" class="dyn-start" title="Start Date" value="' + start + '" oninput="up()">' +
+                    '<input type="month" class="dyn-end" title="End Date" value="' + end + '" ' + endDisabled + ' oninput="up()">' +
+                '</div>' +
+                '<label style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.75rem; color: #ccc; cursor: pointer; text-transform: none; font-weight: normal;">' +
+                    '<input type="checkbox" class="dyn-present" onchange="togglePresent(this)" ' + checkState + ' style="width: auto; margin: 0; cursor: pointer;"> I currently work here' +
+                '</label>' +
+                '<div class="form-g" style="margin-bottom: 0;">' +
+                    '<div class="format-toolbar">' +
+                        '<button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand(\'bold\', false, null);" title="Bold">B</button>' +
+                        '<button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand(\'italic\', false, null);" title="Italic">I</button>' +
+                        '<button type="button" class="fmt-btn" onmousedown="formatLink(event)" title="Add or Remove Link">🔗</button>' +
+                    '</div>' +
+                    '<div class="dyn-body rich-textarea" contenteditable="true" oninput="up()" placeholder="Section Body text...">' + body + '</div>' +
+                '</div>';
+            list.appendChild(div); up();
+        }
+
+        function addQuoteBlock(quote, source) {
+            var list = document.getElementById('dynamic-quotes-list');
+            var div = document.createElement('div');
+            div.className = 'dynamic-block-input';
+            div.innerHTML = 
+                '<div class="dynamic-block-header"><label style="margin: 0;">Press Quote</label><span class="remove-btn" onclick="removeContentBlock(this)">Remove &times;</span></div>' +
+                '<div class="form-g" style="margin-bottom: 6px;">' +
+                    '<div class="format-toolbar">' +
+                        '<button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand(\'bold\', false, null);" title="Bold">B</button>' +
+                        '<button type="button" class="fmt-btn" onmousedown="event.preventDefault(); document.execCommand(\'italic\', false, null);" title="Italic">I</button>' +
+                    '</div>' +
+                    '<div class="dyn-quote-text rich-textarea" contenteditable="true" oninput="up()" placeholder="&quot;An absolute masterclass in live acoustic looping.&quot;" style="min-height: 50px;">' + quote + '</div>' +
+                '</div>' +
+                '<div class="form-g" style="margin-bottom: 0;"><input type="text" class="dyn-quote-source" placeholder="Source (e.g. Rolling Stone)" value="' + source + '" oninput="up()"></div>';
+            list.appendChild(div); up();
+        }
+
+        function addTrackBlock(name, info, link) {
+            var list = document.getElementById('dynamic-tracks-list');
+            var div = document.createElement('div');
+            div.className = 'dynamic-block-input';
+            div.innerHTML = 
+                '<div class="dynamic-block-header"><label style="margin: 0;">Text Track / Release</label><span class="remove-btn" onclick="removeContentBlock(this)">Remove &times;</span></div>' +
+                '<div class="form-g" style="margin-bottom: 6px;"><input type="text" class="dyn-track-name" placeholder="Track Name" value="' + name + '" oninput="up()"></div>' +
+                '<div class="form-g" style="margin-bottom: 6px;"><input type="text" class="dyn-track-info" placeholder="Album / Description (Optional)" value="' + info + '" oninput="up()"></div>' +
+                '<div class="form-g" style="margin-bottom: 0;"><input type="text" class="dyn-track-link" placeholder="Link URL (Optional)" value="' + link + '" oninput="up()"></div>';
+            list.appendChild(div); up();
+        }
+
+        /* Fixed gray placeholder box */
+        function addVTrackBlock(title, link, b64) {
+            var list = document.getElementById('dynamic-v-tracks-list');
+            var div = document.createElement('div');
+            div.className = 'dynamic-block-input';
+            div.innerHTML = 
+                '<div class="dynamic-block-header"><label style="margin: 0;">Release with Cover</label><span class="remove-btn" onclick="removeContentBlock(this)">Remove &times;</span></div>' +
+                '<div style="display:flex; gap:10px;">' +
+                    '<div class="img-prev" style="width:55px; height:55px; background:transparent; border:1px dashed #555; background-size:cover; background-position:center; border-radius:4px; flex-shrink:0; background-image:url(' + b64 + ')"></div>' +
+                    '<div style="flex:1; display:flex; flex-direction:column; gap:6px;">' +
+                        '<input type="text" class="dyn-v-title" placeholder="Album / Track Title" value="' + title + '" oninput="up()">' +
+                        '<input type="text" class="dyn-v-link" placeholder="Link URL" value="' + link + '" oninput="up()">' +
+                        '<div style="position:relative;">' +
+                            '<input type="file" accept="image/*" onchange="readBlockBase64(this)" style="padding:4px; font-size:0.7rem;">' +
+                            '<input type="hidden" class="dyn-v-b64" value="' + b64 + '">' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            list.appendChild(div); up();
+        }
+
+        /* Fixed gray placeholder box */
+        function addGalleryBlock(b64) {
+            var list = document.getElementById('dynamic-gallery-list');
+            var div = document.createElement('div');
+            div.className = 'dynamic-block-input';
+            div.innerHTML = 
+                '<div class="dynamic-block-header"><label style="margin: 0;">Band Photo</label><span class="remove-btn" onclick="removeContentBlock(this)">Remove &times;</span></div>' +
+                '<div style="display:flex; gap:10px; align-items:center;">' +
+                    '<div class="img-prev" style="width:80px; height:50px; background:transparent; border:1px dashed #555; background-size:cover; background-position:center; border-radius:4px; flex-shrink:0; background-image:url(' + b64 + ')"></div>' +
+                    '<div style="flex:1;">' +
+                        '<input type="file" accept="image/*" onchange="readBlockBase64(this)" style="padding:4px; font-size:0.7rem;">' +
+                        '<input type="hidden" class="dyn-g-b64" value="' + b64 + '">' +
+                    '</div>' +
+                '</div>';
+            list.appendChild(div); up();
+        }
+
+        function removeContentBlock(btn) { btn.parentElement.parentElement.remove(); up(); }
+
+        function upStyle() {
+            var papers = document.querySelectorAll('.paper');
+            var bg = document.getElementById('c-paper').value;
+            var tc = document.getElementById('c-title').value;
+            var bc = document.getElementById('c-body').value;
+            papers.forEach(function(p) {
+                p.style.background = bg;
+                p.style.setProperty('--title-color', tc);
+                p.style.setProperty('--body-color', bc);
+            });
+        }
+
+        function buildContactItem(icon, text, href) {
+            if (!text || !text.trim()) return '';
+            var innerContent = href ? '<a href="' + href + '" target="_blank">' + text + '</a>' : text;
+            return '<div class="contact-item">' + icon + '<span>' + innerContent + '</span></div>';
+        }
+
+        function formatMonthYear(val) {
+            if(!val) return '';
+            var match = val.match(/^(\d{4})-(\d{2})$/);
+            if(match) {
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return months[parseInt(match[2], 10) - 1] + ' ' + match[1];
+            }
+            return val;
+        }
+
+        /* --- BULLETPROOF PAGINATION ENGINE --- */
+        function paginate() {
+            var container = document.getElementById('pages-container');
+            container.innerHTML = '';
+            var pages = [];
+            var view = document.getElementById('in-view').value;
+
+            function getPage(index) {
+                while(pages.length <= index) {
+                    var paper = document.createElement('div');
+                    paper.className = 'paper';
+                    
+                    var cInner = document.createElement('div');
+                    cInner.style.width = '100%';
+                    paper.appendChild(cInner);
+
+                    if (index === 0) {
+                        var headerClone = document.getElementById('tmp-header').cloneNode(true);
+                        headerClone.id = '';
+                        headerClone.children[0].style.display = 'flex';
+                        cInner.appendChild(headerClone.children[0]);
+                    } else {
+                        var spacer = document.createElement('div');
+                        spacer.style.height = '30px';
+                        cInner.appendChild(spacer);
+                    }
+
+                    if (view === 'cv') {
+                        var grid = document.createElement('div');
+                        grid.className = 'grid';
+                        
+                        var colLeft = document.createElement('div'); colLeft.className = 'col-left';
+                        var colRight = document.createElement('div'); colRight.className = 'col-right';
+                        
+                        var leftItems = Array.from(document.getElementById('tmp-left').children);
+                        leftItems.forEach(item => colLeft.appendChild(item.cloneNode(true)));
+                        
+                        grid.appendChild(colLeft); 
+                        grid.appendChild(colRight);
+                        cInner.appendChild(grid);
+                        container.appendChild(paper);
+
+                        var maxH = paper.clientHeight - 100;
+                        if (index === 0 && paper.children[0].children[0]) {
+                            maxH -= (paper.children[0].children[0].offsetHeight + 40);
+                        } else {
+                            maxH -= 30;
+                        }
+
+                        var scale = 1.0;
+                        while(colLeft.scrollHeight > maxH && scale > 0.45) {
+                            scale -= 0.02;
+                            colLeft.style.fontSize = scale + 'em';
+                        }
+
+                        pages.push({ paper: paper, colRight: colRight });
+                    } else {
+                        var clWrap = document.createElement('div');
+                        cInner.appendChild(clWrap);
+                        container.appendChild(paper);
+                        pages.push({ paper: paper, clWrap: clWrap });
+                    }
+                }
+                return pages[index];
+            }
+
+            if (view === 'cv') {
+                var rightItems = Array.from(document.getElementById('tmp-right').children);
+                var pRight = 0;
+                rightItems.forEach(function(item) {
+                    var clone = item.cloneNode(true);
+                    var page = getPage(pRight);
+                    page.colRight.appendChild(clone);
+                    
+                    if (page.paper.scrollHeight > page.paper.clientHeight) {
+                        if (page.colRight.children.length > 1) {
+                            page.colRight.removeChild(clone);
+                            pRight++;
+                            getPage(pRight).colRight.appendChild(clone);
+                        }
+                    }
+                });
+            } else {
+                var clItems = Array.from(document.getElementById('tmp-cl').children);
+                var pIndex = 0;
+                clItems.forEach(function(item) {
+                    var clone = item.cloneNode(true);
+                    var page = getPage(pIndex);
+                    page.clWrap.appendChild(clone);
+                    if (page.paper.scrollHeight > page.paper.clientHeight && page.clWrap.children.length > 1) {
+                        page.clWrap.removeChild(clone);
+                        pIndex++;
+                        getPage(pIndex).clWrap.appendChild(clone);
+                    }
+                });
+            }
+            upStyle();
+        }
+
+        function up() {
+            document.getElementById('tmp-name').innerText = document.getElementById('in-name').value.toUpperCase();
+            document.getElementById('tmp-title').innerText = document.getElementById('in-title').value.toUpperCase();
+            
+            var qrUrl = document.getElementById('in-qr').value.trim();
+            var qrImg = document.getElementById('tmp-qr');
+            var qrContainer = document.getElementById('tmp-qr-container');
+            if (qrUrl) {
+                qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(qrUrl);
+                qrContainer.style.display = 'flex';
+            } else {
+                qrContainer.style.display = 'none';
+            }
+
+            var tmpLeft = document.getElementById('tmp-left');
+            tmpLeft.innerHTML = '';
+            
+            var contactH = document.createElement('div');
+            contactH.className = 'section-h'; contactH.innerText = 'Contact';
+            tmpLeft.appendChild(contactH);
+            
+            var city = document.getElementById('in-city').value;
+            var postal = document.getElementById('in-postal').value.toUpperCase();
+            var phone = document.getElementById('in-phone').value;
+            var email = document.getElementById('in-email').value.trim();
+            var web = document.getElementById('in-web').value.trim();
+
+            var contacts = [];
+            contacts.push(buildContactItem(iconCity, city, null));
+            contacts.push(buildContactItem(iconPostal, postal, null));
+            contacts.push(buildContactItem(iconPhone, phone ? '+31 ' + phone : '', null));
+            contacts.push(buildContactItem(iconEmail, email, email ? 'mailto:' + email : null));
+            contacts.push(buildContactItem(iconWeb, web, web ? (web.startsWith('http') ? web : 'https://' + web) : null));
+            
+            contacts.forEach(function(cHtml) {
+                if (cHtml) {
+                    var div = document.createElement('div'); div.innerHTML = cHtml;
+                    tmpLeft.appendChild(div.firstChild);
+                }
+            });
+
+            var skillsHtml = document.getElementById('in-skills').innerHTML.trim();
+            var skillsRaw = skillsHtml.split(',');
+            var validSkills = skillsRaw.filter(s => s.trim().replace(/<[^>]*>?/gm, '') !== '');
+            if(validSkills.length > 0) {
+                var skillH = document.createElement('div');
+                skillH.className = 'section-h'; skillH.innerText = 'Tech & Gear';
+                tmpLeft.appendChild(skillH);
+                
+                var skillWrap = document.createElement('div');
+                skillWrap.className = 'skills-container';
+                validSkills.forEach(function(skill) {
+                    skillWrap.innerHTML += '<div class="skill-pill">' + skill.trim() + '</div>';
+                });
+                tmpLeft.appendChild(skillWrap);
+            }
+
+            var tTitle = document.getElementById('in-tracks-title').value.trim();
+            if(tTitle) {
+                var trH = document.createElement('div');
+                trH.className = 'section-h'; trH.innerText = tTitle;
+                tmpLeft.appendChild(trH);
+            }
+            
+            var tBlocks = document.querySelectorAll('#dynamic-tracks-list .dynamic-block-input');
+            for(var k=0; k < tBlocks.length; k++) {
+                var tName = tBlocks[k].querySelector('.dyn-track-name').value.trim();
+                var tInfo = tBlocks[k].querySelector('.dyn-track-info').value.trim();
+                var tLink = tBlocks[k].querySelector('.dyn-track-link').value.trim();
+                
+                if(tName || tInfo) {
+                    var titleHtml = tLink ? '<a href="' + (tLink.startsWith('http') ? tLink : 'https://' + tLink) + '" target="_blank">' + tName + '</a>' : tName;
+                    var tHtml = '<div class="track-item"><div class="play-btn">&#9654;</div><div><div class="track-title">' + titleHtml + '</div>';
+                    if(tInfo) tHtml += '<div class="track-info">' + tInfo + '</div>';
+                    tHtml += '</div></div>';
+                    
+                    var wrap = document.createElement('div'); wrap.innerHTML = tHtml;
+                    tmpLeft.appendChild(wrap.firstChild);
+                }
+            }
+
+            /* --- NEW POSITIONING LOGIC FOR RIGHT COLUMN --- */
+            var tmpRight = document.getElementById('tmp-right');
+            tmpRight.innerHTML = '';
+            
+            // Build Visual Discography Array
+            var vElements = [];
+            var vBlocksList = document.querySelectorAll('#dynamic-v-tracks-list .dynamic-block-input');
+            if(vBlocksList.length > 0) {
+                var vH = document.createElement('div');
+                vH.className = 'block-h'; vH.style.marginBottom = '15px'; vH.innerText = 'Visual Discography';
+                vElements.push(vH);
+                
+                var vGrid = document.createElement('div');
+                vGrid.style.display = 'grid';
+                vGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(110px, 1fr))';
+                vGrid.style.gap = '20px';
+                vGrid.style.marginBottom = '25px';
+                
+                vBlocksList.forEach(b => {
+                    var title = b.querySelector('.dyn-v-title').value.trim();
+                    var link = b.querySelector('.dyn-v-link').value.trim();
+                    var b64 = b.querySelector('.dyn-v-b64').value;
+                    
+                    if(title || b64) {
+                        var html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+                        // Removed gray background color. Added .v-cover class to strip box-shadow on PDF print
+                        var inner = '<div class="v-cover" style="width:100%; aspect-ratio:1/1; background-color:transparent; border-radius:6px; background-size:cover; background-position:center; background-image:url(' + b64 + '); box-shadow:0 4px 10px rgba(0,0,0,0.15);"></div>';
+                        if(title) inner += '<div style="font-size:0.8rem; font-weight:700; text-align:center; color:var(--title-color);">' + title + '</div>';
+                        
+                        if(link) html += '<a href="' + (link.startsWith('http') ? link : 'https://'+link) + '" target="_blank" style="text-decoration:none; color:inherit;">' + inner + '</a>';
+                        else html += inner;
+                        
+                        html += '</div>';
+                        var wrapper = document.createElement('div'); wrapper.innerHTML = html;
+                        vGrid.appendChild(wrapper.firstChild);
+                    }
+                });
+                vElements.push(vGrid);
+            }
+
+            // Build Gallery Array with new sizing logic
+            var gElements = [];
+            var gBlocksList = document.querySelectorAll('#dynamic-gallery-list .dynamic-block-input');
+            var gScale = document.getElementById('in-gal-scale').value;
+            
+            if (gBlocksList.length > 0) {
+                var gH = document.createElement('div');
+                gH.className = 'block-h'; gH.style.marginBottom = '15px'; gH.innerText = 'Gallery';
+                gElements.push(gH);
+                
+                var gFlex = document.createElement('div');
+                // Added beautifully aligned Flex-Row logic
+                gFlex.style.display = 'flex'; gFlex.style.flexWrap = 'wrap'; gFlex.style.gap = '15px'; gFlex.style.marginBottom = '25px';
+                
+                gBlocksList.forEach(b => {
+                    var b64 = b.querySelector('.dyn-g-b64').value;
+                    if(b64) {
+                        // Added .g-photo class to disable shadow in PDF. Flex-grow forces beautiful masonry alignment.
+                        var html = '<img src="' + b64 + '" class="g-photo" style="height:' + gScale + 'px; min-width:' + (gScale*0.8) + 'px; border-radius:6px; object-fit:cover; box-shadow:0 4px 10px rgba(0,0,0,0.1); flex-grow:1;">';
+                        var div = document.createElement('div'); div.innerHTML = html;
+                        gFlex.appendChild(div.firstChild);
+                    }
+                });
+                gElements.push(gFlex);
+            }
+            
+            // Build Content Blocks Array
+            var expElements = [];
+            var blocks = document.querySelectorAll('#dynamic-content-list .dynamic-block-input');
+            for (var i = 0; i < blocks.length; i++) {
+                var bTitle = blocks[i].querySelector('.dyn-title').value.trim();
+                var bCity = blocks[i].querySelector('.dyn-city').value.trim();
+                var bStart = formatMonthYear(blocks[i].querySelector('.dyn-start').value.trim());
+                var bEnd = formatMonthYear(blocks[i].querySelector('.dyn-end').value.trim());
+                var isPresent = blocks[i].querySelector('.dyn-present').checked;
+                var bBody = blocks[i].querySelector('.dyn-body').innerHTML.trim();
+                
+                if (isPresent) bEnd = 'Present';
+
+                var metaParts = [];
+                if (bCity) metaParts.push(bCity);
+                var dateStr = '';
+                if (bStart && bEnd) dateStr = bStart + ' – ' + bEnd;
+                else if (bStart && isPresent) dateStr = bStart + ' – Present';
+                else if (bStart) dateStr = bStart;
+                else if (bEnd) dateStr = bEnd;
+                else if (isPresent) dateStr = 'Present';
+                if (dateStr) metaParts.push(dateStr);
+                
+                var metaText = metaParts.join(' | ');
+                
+                if (bTitle || bBody || metaText) {
+                    var html = '<div class="block-item">';
+                    if (bTitle) html += '<div class="block-h">' + bTitle + '</div>';
+                    if (metaText) html += '<div class="block-meta">' + metaText + '</div>';
+                    if (bBody) html += '<div class="block-p">' + bBody + '</div>';
+                    html += '</div>';
+                    var div = document.createElement('div'); div.innerHTML = html;
+                    expElements.push(div.firstChild);
+                }
+            }
+
+            // Build Quotes Array
+            var qElements = [];
+            var quoteBlocks = document.querySelectorAll('#dynamic-quotes-list .dynamic-block-input');
+            if(quoteBlocks.length > 0) {
+                var qH = document.createElement('div');
+                qH.className = 'section-h'; qH.innerText = 'Press Quotes';
+                qElements.push(qH);
+            }
+            for (var j = 0; j < quoteBlocks.length; j++) {
+                var qText = quoteBlocks[j].querySelector('.dyn-quote-text').innerHTML.trim();
+                var qSource = quoteBlocks[j].querySelector('.dyn-quote-source').value.trim();
+                if (qText || qSource) {
+                    var qHtml = '<div class="quote-block">';
+                    if (qText) qHtml += '<div class="quote-text">"' + qText + '"</div>';
+                    if (qSource) qHtml += '<div class="quote-source">— ' + qSource + '</div>';
+                    qHtml += '</div>';
+                    var qDiv = document.createElement('div'); qDiv.innerHTML = qHtml;
+                    qElements.push(qDiv.firstChild);
+                }
+            }
+
+            // Assembly Core: Injecting Visuals exactly where chosen
+            var vPos = parseInt(document.getElementById('in-v-pos').value);
+            var gPos = parseInt(document.getElementById('in-g-pos').value);
+            var finalRight = [];
+            
+            var vAdded = false;
+            var gAdded = false;
+
+            function insertVis(idx) {
+                if (vPos === idx && !vAdded && vElements.length > 0) { vElements.forEach(el => finalRight.push(el)); vAdded = true; }
+                if (gPos === idx && !gAdded && gElements.length > 0) { gElements.forEach(el => finalRight.push(el)); gAdded = true; }
+            }
+
+            // Try Top (0)
+            insertVis(0);
+            
+            // Loop Content Blocks
+            for (var k = 0; k < expElements.length; k++) {
+                finalRight.push(expElements[k]);
+                insertVis(k + 1); // After 1st, 2nd, etc.
+            }
+            
+            // If position set to bottom (99) or higher than available blocks
+            if (!vAdded && vElements.length > 0) { vElements.forEach(el => finalRight.push(el)); vAdded = true; }
+            if (!gAdded && gElements.length > 0) { gElements.forEach(el => finalRight.push(el)); gAdded = true; }
+
+            // Quotes always at the end
+            qElements.forEach(el => finalRight.push(el));
+
+            // Append all to DOM
+            finalRight.forEach(el => tmpRight.appendChild(el));
+
+            var tmpCl = document.getElementById('tmp-cl');
+            tmpCl.innerHTML = '<div style="margin-top: 15px;" class="cl-meta">' + document.getElementById('in-cl-meta').innerHTML + '</div>' + 
+                              '<div class="cl-body">' + document.getElementById('in-cl-body').innerHTML + '</div>';
+
+            paginate();
+        }
+
+        /* --- SAVE & LOAD SYSTEM --- */
+        function saveData() {
+            var saveName = document.getElementById('in-save-name').value.trim();
+            if(!saveName) { alert("Please enter a name for this save before saving."); return; }
+            
+            var data = {
+                picSrc: document.getElementById('tmp-pic').src,
+                picScale: document.getElementById('in-pic-scale').value,
+                name: document.getElementById('in-name').value,
+                title: document.getElementById('in-title').value,
+                qr: document.getElementById('in-qr').value,
+                city: document.getElementById('in-city').value,
+                postal: document.getElementById('in-postal').value,
+                phone: document.getElementById('in-phone').value,
+                email: document.getElementById('in-email').value,
+                web: document.getElementById('in-web').value,
+                skills: document.getElementById('in-skills').innerHTML,
+                tracksTitle: document.getElementById('in-tracks-title').value,
+                clMeta: document.getElementById('in-cl-meta').innerHTML,
+                clBody: document.getElementById('in-cl-body').innerHTML,
+                view: document.getElementById('in-view').value,
+                cPaper: document.getElementById('c-paper').value,
+                cTitle: document.getElementById('c-title').value,
+                cBody: document.getElementById('c-body').value,
+                vPos: document.getElementById('in-v-pos').value,
+                gPos: document.getElementById('in-g-pos').value,
+                gScale: document.getElementById('in-gal-scale').value,
+                experience: [], quotes: [], tracks: [], vTracks: [], gallery: []
+            };
+
+            document.querySelectorAll('#dynamic-content-list .dynamic-block-input').forEach(b => {
+                data.experience.push({ title: b.querySelector('.dyn-title').value, city: b.querySelector('.dyn-city').value, start: b.querySelector('.dyn-start').value, end: b.querySelector('.dyn-end').value, present: b.querySelector('.dyn-present').checked, body: b.querySelector('.dyn-body').innerHTML });
+            });
+
+            document.querySelectorAll('#dynamic-quotes-list .dynamic-block-input').forEach(b => {
+                data.quotes.push({ text: b.querySelector('.dyn-quote-text').innerHTML, source: b.querySelector('.dyn-quote-source').value });
+            });
+
+            document.querySelectorAll('#dynamic-tracks-list .dynamic-block-input').forEach(b => {
+                data.tracks.push({ name: b.querySelector('.dyn-track-name').value, info: b.querySelector('.dyn-track-info').value, link: b.querySelector('.dyn-track-link').value });
+            });
+
+            document.querySelectorAll('#dynamic-v-tracks-list .dynamic-block-input').forEach(b => {
+                data.vTracks.push({ title: b.querySelector('.dyn-v-title').value, link: b.querySelector('.dyn-v-link').value, b64: b.querySelector('.dyn-v-b64').value });
+            });
+
+            document.querySelectorAll('#dynamic-gallery-list .dynamic-block-input').forEach(b => {
+                data.gallery.push({ b64: b.querySelector('.dyn-g-b64').value });
+            });
+
+            var saves = JSON.parse(localStorage.getItem('cv_saves') || '{}');
+            saves[saveName] = data;
+            localStorage.setItem('cv_saves', JSON.stringify(saves));
+            updateSaveList();
+            alert("Progress safely saved as: " + saveName);
+        }
+
+        function loadData(saveName) {
+            var saves = JSON.parse(localStorage.getItem('cv_saves') || '{}');
+            var data = saves[saveName];
+            if(!data) return;
+
+            if (data.picSrc && data.picSrc !== "" && !data.picSrc.endsWith(window.location.host + '/')) {
+                document.getElementById('tmp-pic').src = data.picSrc;
+                document.getElementById('tmp-pic').style.display = 'block';
+            }
+            document.getElementById('in-pic-scale').value = data.picScale || 160;
+            document.getElementById('in-name').value = data.name || '';
+            document.getElementById('in-title').value = data.title || '';
+            document.getElementById('in-qr').value = data.qr || '';
+            document.getElementById('in-city').value = data.city || '';
+            document.getElementById('in-postal').value = data.postal || '';
+            document.getElementById('in-phone').value = data.phone || '';
+            document.getElementById('in-email').value = data.email || '';
+            document.getElementById('in-web').value = data.web || '';
+            
+            document.getElementById('in-skills').innerHTML = data.skills || '';
+            document.getElementById('in-tracks-title').value = data.tracksTitle || '';
+            document.getElementById('in-cl-meta').innerHTML = data.clMeta || '';
+            document.getElementById('in-cl-body').innerHTML = data.clBody || '';
+            
+            document.getElementById('in-view').value = data.view || 'cv';
+            document.getElementById('c-paper').value = data.cPaper || '#f5f5f5';
+            document.getElementById('c-title').value = data.cTitle || '#222222';
+            document.getElementById('c-body').value = data.cBody || '#444444';
+
+            document.getElementById('in-v-pos').value = data.vPos || '0';
+            document.getElementById('in-g-pos').value = data.gPos || '99';
+            document.getElementById('in-gal-scale').value = data.gScale || '140';
+
+            document.getElementById('dynamic-content-list').innerHTML = '';
+            data.experience.forEach(e => { addContentBlock(e.title, e.body, e.city, e.start, e.end, e.present); });
+            
+            document.getElementById('dynamic-quotes-list').innerHTML = '';
+            data.quotes.forEach(q => { addQuoteBlock(q.text, q.source); });
+            
+            document.getElementById('dynamic-tracks-list').innerHTML = '';
+            data.tracks.forEach(t => { addTrackBlock(t.name, t.info, t.link); });
+
+            document.getElementById('dynamic-v-tracks-list').innerHTML = '';
+            if(data.vTracks) { data.vTracks.forEach(t => { addVTrackBlock(t.title, t.link, t.b64); }); }
+
+            document.getElementById('dynamic-gallery-list').innerHTML = '';
+            if(data.gallery) { data.gallery.forEach(g => { addGalleryBlock(g.b64); }); }
+
+            upPicScale();
+            up();
+            document.getElementById('in-save-name').value = saveName;
+            alert("Loaded CV version: " + saveName);
+        }
+
+        function deleteData(saveName) {
+            if(!confirm("Are you sure you want to permanently delete '" + saveName + "'?")) return;
+            var saves = JSON.parse(localStorage.getItem('cv_saves') || '{}');
+            delete saves[saveName];
+            localStorage.setItem('cv_saves', JSON.stringify(saves));
+            updateSaveList();
+        }
+
+        function updateSaveList() {
+            var list = document.getElementById('save-list-container');
+            list.innerHTML = '';
+            var saves = JSON.parse(localStorage.getItem('cv_saves') || '{}');
+            for (var key in saves) {
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; background:#1e1e1e; padding:10px; margin-bottom:8px; border:1px solid #444; border-radius:4px;">
+                    <span style="font-size:0.85rem; font-weight:bold; color:#fff;">${key}</span>
+                    <div style="display:flex; gap:5px;">
+                        <button type="button" class="fmt-btn" onclick="loadData('${key}')">Load</button>
+                        <button type="button" class="fmt-btn" style="color:#121212; background:#ff4d4d;" onclick="deleteData('${key}')">&times;</button>
+                    </div>
+                </div>`;
+            }
+        }
+
+        window.onload = function() { 
+            addContentBlock('Lead Guitarist & Arranger', 'Performed across multiple European venues as part of the summer acoustic tour. Collaborated on setlist curation and stage arrangements.', 'Amsterdam', '2021-05', '', true);
+            addContentBlock('Studio Musician', 'Provided backing tracks and compositional ideas for independent film scores. Worked closely with sound engineers to achieve desired acoustic textures.', 'London', '2018-02', '2020-11', false);
+            
+            addVTrackBlock('Neon Skies EP', 'https://open.spotify.com', '');
+            
+            addQuoteBlock('Francisco Morales brings a rare, raw energy to the acoustic stage that is utterly impossible to ignore.', 'The Indie Music Blog');
+
+            addTrackBlock('Midnight Echoes', 'The Fall EP', 'https://open.spotify.com');
+
+            updateSaveList();
+            upPicScale(); 
+            up(); 
+        };
+    </script>
+</body>
+</html>
